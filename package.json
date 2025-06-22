@@ -1,0 +1,44 @@
+{
+  "name": "blurit-sdk",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/blurit.cjs",
+  "module": "./dist/blurit.mjs",
+  "types": "./dist/blurit.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/blurit.mjs",
+      "require": "./dist/blurit.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown --treeshake",
+    "dev": "tsdown --treeshake --watch",
+    "test": "vitest",
+    "lint": "eslint .",
+    "format": "prettier --write src/"
+  },
+  "packageManager": "pnpm@10.5.2+sha512.da9dc28cd3ff40d0592188235ab25d3202add8a207afbedc682220e4a0029ffbff4562102b9e6e46b4e3f9e8bd53e6d05de48544b0c57d4b0179e22c76d1199b",
+  "devDependencies": {
+    "@eslint/js": "^9.29.0",
+    "@types/node": "^24.0.3",
+    "dotenv": "^16.5.0",
+    "eslint": "^9.29.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-prettier": "^5.5.0",
+    "h3": "^1.15.3",
+    "prettier": "^3.5.3",
+    "tsdown": "^0.12.8",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.34.1",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "axios": "^1.10.0",
+    "file-type": "^21.0.0"
+  }
+}
