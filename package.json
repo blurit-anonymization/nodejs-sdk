@@ -1,6 +1,6 @@
 {
   "name": "blurit-sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "main": "./dist/blurit.cjs",
   "module": "./dist/blurit.mjs",
@@ -12,7 +12,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "examples"
   ],
   "scripts": {
     "build": "tsdown --treeshake",
