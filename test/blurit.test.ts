@@ -1,109 +1,120 @@
-import { GetJobStatusResponse, CreateJobResponse, Blurit, CreateWebhookResponse, RefreshResponse, LoginResponse, GetWebhooksResponse, UpdateWebhookResponse } from '../src/blurit';
-import { test, expect, describe, beforeAll, expectTypeOf } from 'vitest';
-import 'dotenv/config';
-import { writeFileSync } from 'fs';
-import { stat, unlink } from 'fs/promises';
+import {
+  GetJobStatusResponse,
+  CreateJobResponse,
+  Blurit,
+  CreateWebhookResponse,
+  RefreshResponse,
+  LoginResponse,
+  GetWebhooksResponse,
+  UpdateWebhookResponse,
+} from "../src/blurit";
+import { test, expect, describe, beforeAll, expectTypeOf } from "vitest";
+import "dotenv/config";
+import { writeFileSync } from "fs";
+import { stat, unlink } from "fs/promises";
 
-describe('Authentication', () => {
+describe("Authentication", () => {
   const blurit = new Blurit();
-  let loginData: LoginResponse|undefined = undefined;
-  
-  test('login', async () => {
+  let loginData: LoginResponse | undefined = undefined;
+
+  test("login", async () => {
     loginData = await login(blurit);
   });
 
-  test('refresh', async ({skip}) => {
+  test("refresh", async ({ skip }) => {
     skip(loginData == undefined);
 
     loginData = await blurit.refresh();
     expectTypeOf(loginData).toEqualTypeOf<RefreshResponse>();
   });
-  
-})
+});
 
-describe('Jobs', () => {
+describe("Jobs", () => {
   const blurit = new Blurit();
-  let jobId = '';
-  let filename = ''
-  let outputMedia: string|undefined = undefined;
+  let jobId = "";
+  const filename = "./images/face.jpg";
+  let outputMedia: string | undefined = undefined;
 
   beforeAll(async () => {
     await login(blurit);
   });
 
-  test('createJob', async () => {
-    const filename = './images/face.jpg';
+  test("createJob", async () => {
     const data = await blurit.createJob(filename, {
       activation_faces_blur: true,
       blur_type: {
-        anonymization_type: 'pixelate',
+        anonymization_type: "pixelate",
         num_pixels: 10,
-      }
+      },
     });
     expectTypeOf(data).toEqualTypeOf<CreateJobResponse>();
     jobId = (data as CreateJobResponse).anonymization_job_id;
   });
 
-  test('getJobStatus', async ({skip}) => {
-    skip(jobId == '');
+  test(
+    "getJobStatus",
+    async ({ skip }) => {
+      skip(jobId == "");
 
-    // Wait 500ms before checking again
-    await new Promise(resolve => setTimeout(resolve, 500))
+      // Wait 500ms before checking again
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-    const data = await blurit.getJobStatus(jobId);
-    expectTypeOf(data).toEqualTypeOf<GetJobStatusResponse>();
-    expect(data.status).toBe('Succeeded');
-    outputMedia = data.output_media;
-  }, { retry: 20});
+      const data = await blurit.getJobStatus(jobId);
+      expectTypeOf(data).toEqualTypeOf<GetJobStatusResponse>();
+      expect(data.status).toBe("Succeeded");
+      outputMedia = data.output_media;
+    },
+    { retry: 20 }
+  );
 
-  test('getResultFile', async ({skip}) => {
+  test("getResultFile", async ({ skip }) => {
     skip(outputMedia == undefined);
 
-    const anonymizedFilePath = './images/face_anonymized.jpg'
-    const data = await blurit.getResultFile(outputMedia!.split('/').pop()!, 'arraybuffer');
+    const anonymizedFilePath = "./images/face_anonymized.jpg";
+    const data = await blurit.getResultFile(outputMedia!.split("/").pop()!, "buffer");
     expect(data).toBeDefined();
 
     try {
       await unlink(anonymizedFilePath);
     } catch {}
 
-    writeFileSync(anonymizedFilePath, Buffer.from(data));
-    const stats = await stat(anonymizedFilePath)
+    writeFileSync(anonymizedFilePath, data);
+    const stats = await stat(anonymizedFilePath);
     expect(stats).toBeDefined();
   });
+
+  test("createJobAndWait", async () => {
+    const data = await blurit.createJobAndWait(filename, 10000);
+    expect(data).toBeInstanceOf(Buffer);
+  }, 10000);
 });
 
-describe('Webhooks', () => {
+describe("Webhooks", () => {
   const blurit = new Blurit();
-  const webhookUrl = 'https://webhook.site/webhook-url';
-  let webhookId = '';
-  
+  const webhookUrl = "https://webhook.site/webhook-url";
+  let webhookId = "";
+
   beforeAll(async () => {
     await login(blurit);
   });
 
-  test('createWebhook', async () => {
+  test("createWebhook", async () => {
     const webhook = await blurit.createWebhook(webhookUrl);
     expectTypeOf(webhook).toEqualTypeOf<CreateWebhookResponse>();
     expect(webhook.webhookUrl).toBe(webhookUrl);
     webhookId = webhook.uuid;
-
   });
 
-  test('getWebhooks', async ({skip}) => {
-    skip(webhookId == '');
+  test("getWebhooks", async ({ skip }) => {
+    skip(webhookId == "");
 
     const webhooks = await blurit.getWebhooks();
     expectTypeOf(webhooks).toEqualTypeOf<GetWebhooksResponse>();
-    expect(webhooks).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ webhookUrl }),
-      ]),
-    );
+    expect(webhooks).toEqual(expect.arrayContaining([expect.objectContaining({ webhookUrl })]));
   });
 
-  test('updateWebhook', async ({skip}) => {
-    skip(webhookId == '');
+  test("updateWebhook", async ({ skip }) => {
+    skip(webhookId == "");
 
     const webhookUrl2 = `${webhookUrl}-2`;
     const webhook = await blurit.updateWebhook(webhookId, webhookUrl2);
@@ -112,7 +123,7 @@ describe('Webhooks', () => {
     expect(webhook.webhookUrl).toBe(webhookUrl2);
   });
 
-  test('deleteWebhook', async () => {
+  test("deleteWebhook", async () => {
     // It's safer to delete all webhooks to avoid having remaining "zombie" webhooks
     let webhooks = await blurit.getWebhooks();
 
@@ -123,14 +134,11 @@ describe('Webhooks', () => {
     webhooks = await blurit.getWebhooks();
     expect(webhooks.length).toBe(0);
   });
-})
+});
 
 async function login(blurit: Blurit) {
-  const loginData = await blurit.login(
-    process.env.CLIENT_ID!,
-    process.env.SECRET_ID!,
-  );
+  const loginData = await blurit.login(process.env.CLIENT_ID!, process.env.SECRET_ID!);
   expectTypeOf(loginData).toEqualTypeOf<LoginResponse>();
-  
+
   return loginData;
 }

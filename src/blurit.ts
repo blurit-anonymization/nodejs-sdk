@@ -1,3 +1,5 @@
+declare const window: any;
+
 import fs from "fs/promises";
 import axios, { type AxiosRequestConfig } from "axios";
 import { fileTypeFromFile } from "file-type";
@@ -15,11 +17,13 @@ import { createWriteStream, type ReadStream } from "fs";
 export class Blurit {
   private loginData: LoginResponse = {} as LoginResponse;
   private axiosInstance;
+  private readonly isNode: boolean;
 
   constructor(private readonly fetchInit?: AxiosRequestConfig) {
     this.axiosInstance = axios.create({
       baseURL: "https://api.services.wassa.io",
     });
+    this.isNode = typeof window === "undefined";
   }
 
   /**
@@ -93,6 +97,33 @@ export class Blurit {
   }
 
   /**
+   * @description Create a new anonymization job and wait for it to complete.
+   * @param {string} file - The content of the file.
+   * @param {number} waitTime - The time to wait for the job to complete.
+   * @param {AnonymizationOptions} options - The blur options.
+   * @returns {Promise<GetJobStatusResponse>} The status of the anonymization job.
+   */
+  async createJobAndWait(file: string, waitTime: number, options?: AnonymizationOptions) {
+    const data = await this.createJob(file, options);
+    const jobId = data.anonymization_job_id;
+    const start = Date.now();
+    let currentTime = start;
+    let jobStatus;
+
+    do {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      jobStatus = await this.getJobStatus(jobId);
+      currentTime = Date.now();
+    } while (jobStatus.status !== "Succeeded" && currentTime - start < waitTime);
+
+    if (jobStatus.status !== "Succeeded") {
+      throw new Error("Job failed");
+    }
+
+    return await this.getResultFile(jobStatus.output_media!.split("/").pop()!, "buffer");
+  }
+
+  /**
    * @description Get the status of an anonymization job.
    * @param {string} jobId - The ID of the anonymization job.
    * @returns {Promise<GetJobStatusResponse>} The status of the anonymization job.
@@ -108,15 +139,28 @@ export class Blurit {
    * @description Get the result file of an anonymization job.
    * @param {string} filename - The name of the file.
    * @param {string} responseType - The type of response.
-   * @returns {Promise<ReadStream|ArrayBuffer|Blob>} The result file.
+   * @returns {Promise<ReadStream|ArrayBuffer|Buffer|Blob>} The result file.
    */
-  async getResultFile<T extends "stream" | "arraybuffer" | "blob" = "stream">(filename: string, responseType: T) {
-    type ResultType = T extends "stream" ? ReadStream : T extends "arraybuffer" ? ArrayBuffer : Blob;
+  async getResultFile<T extends "stream" | "arraybuffer" | "buffer" | "blob" = "stream">(
+    filename: string,
+    responseType: T
+  ) {
+    type ResultType = T extends "stream"
+      ? ReadStream
+      : T extends "arraybuffer"
+        ? ArrayBuffer
+        : T extends "buffer"
+          ? Buffer
+          : Blob;
+
+    if (!this.isNode && responseType === "buffer") {
+      throw new Error("Buffer is not supported in the browser");
+    }
 
     // Make the call
     return await this.request<ResultType>(`/innovation-service/result/${filename}`, {
       method: "GET",
-      responseType,
+      responseType: responseType == "buffer" ? "arraybuffer" : responseType,
     });
   }
 
@@ -267,6 +311,8 @@ export type GetJobStatusResponse = {
   output_json?: string;
   error?: string;
 };
+
+export type ArrayBufferOrBuffer = ArrayBuffer | Buffer;
 
 export type GetWebhooksResponse = CreateWebhookResponse[];
 
