@@ -2,13 +2,31 @@
 
 The official Node.js SDK for the [Blurit API](https://blurit.io/api).
 
+## Installation
+
+You can install the package using your favorite package manager:
+
+```bash
+# Using npm
+npm install blurit-sdk
+
+# Using yarn
+yarn add blurit-sdk
+
+# Using pnpm
+pnpm i blurit-sdk
+
+# Using bun
+bun i blurit-sdk
+```
+
 ## Description
 
 This library provides a convenient way to interact with the Blurit REST API for anonymizing images and videos.
 
 ## Requirements
 
-- You must already have a Blurit account. If you don't have any, pleae [subscribe here](https://blurit.io/pricing)
+- You must already have a Blurit account. If you don't have any, please [subscribe here](https://blurit.io/pricing)
 - You will need your Client ID and Secret ID. You can find them [here](https://app.blurit.io/account/developer)
 
 ## Using the API
@@ -28,24 +46,6 @@ If you really cannot use webhooks, for example if you use the SDK from an SPA wi
 
 - Images normally take 2 to 3 secondes to process, so an interval of 500ms should be enough
 - Videos may take much longer depending on their resolution and duration, so an interval of 30s to 1min should be enough (even more for long/high res videos)
-
-## Installation
-
-You can install the package using your favorite package manager:
-
-```bash
-# Using npm
-npm install blurit-sdk
-
-# Using yarn
-yarn add blurit-sdk
-
-# Using pnpm
-pnpm i blurit-sdk
-
-# Using bun
-bun i blurit-sdk
-```
 
 ## Usage
 
