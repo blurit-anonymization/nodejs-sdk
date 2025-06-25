@@ -8,7 +8,7 @@ async function run() {
   console.log("Login OK");
 
   const filename = "./images/face.jpg";
-  const data = await blurit.createJob(filename, {
+  const data = await blurit.createJobFromPath(filename, {
     activation_faces_blur: true,
     blur_type: {
       anonymization_type: "pixelate",
