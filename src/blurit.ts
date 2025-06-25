@@ -69,17 +69,17 @@ export class Blurit {
 
   /**
    * @description Create a new anonymization job.
-   * @param {string} file - The content of the file.
+   * @param {string} filePath - The content of the file.
    * @param {AnonymizationOptions} options - The blur options.
    * @returns {Promise<CreateJobResponse>} The anonymization data.
    */
-  async createJob(file: string, options?: AnonymizationOptions) {
+  async createJob(filePath: string, options?: AnonymizationOptions) {
     // This route requires multipart/form-data body, not JSON, so we need to use FormData
     const formData = new FormData();
-    const fileBuffer = await fs.readFile(file);
-    const type = await fileTypeFromFile(file);
+    const fileBuffer = await fs.readFile(filePath);
+    const type = await fileTypeFromFile(filePath);
     const fileBlob = new Blob([fileBuffer], { type: type?.mime });
-    const name = file.split("/").pop()!;
+    const name = filePath.split("/").pop()!;
 
     formData.append("input_media", fileBlob, name);
 
