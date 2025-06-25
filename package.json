@@ -1,6 +1,6 @@
 {
   "name": "blurit-sdk",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "main": "./dist/blurit.cjs",
   "module": "./dist/blurit.mjs",
   "types": "./dist/blurit.d.ts",

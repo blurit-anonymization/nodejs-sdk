@@ -40,7 +40,7 @@ describe("Jobs", () => {
   });
 
   test("createJob", async () => {
-    const data = await blurit.createJob(filename, {
+    const data = await blurit.createJobFromPath(filename, {
       activation_faces_blur: true,
       blur_type: {
         anonymization_type: "pixelate",
@@ -82,11 +82,6 @@ describe("Jobs", () => {
     const stats = await stat(anonymizedFilePath);
     expect(stats).toBeDefined();
   });
-
-  test("createJobAndWait", async () => {
-    const data = await blurit.createJobAndWait(filename, 10000);
-    expect(data).toBeInstanceOf(Buffer);
-  }, 10000);
 });
 
 describe("Webhooks", () => {

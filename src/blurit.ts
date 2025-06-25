@@ -2,7 +2,7 @@ declare const window: any;
 
 import fs from "fs/promises";
 import axios, { type AxiosRequestConfig } from "axios";
-import { fileTypeFromFile } from "file-type";
+import { fileTypeFromBuffer } from "file-type";
 import { createWriteStream, type ReadStream } from "fs";
 
 /**
@@ -73,54 +73,66 @@ export class Blurit {
    * @param {AnonymizationOptions} options - The blur options.
    * @returns {Promise<CreateJobResponse>} The anonymization data.
    */
-  async createJob(filePath: string, options?: AnonymizationOptions) {
-    // This route requires multipart/form-data body, not JSON, so we need to use FormData
-    const formData = new FormData();
+  async createJobFromPath(filePath: string, options?: AnonymizationOptions) {
     const fileBuffer = await fs.readFile(filePath);
-    const type = await fileTypeFromFile(filePath);
-    const fileBlob = new Blob([fileBuffer], { type: type?.mime });
     const name = filePath.split("/").pop()!;
 
-    formData.append("input_media", fileBlob, name);
-
-    if (options) {
-      this.appendFormData(formData, options);
-    }
-
-    // Make the call
-    const data = await this.request<CreateJobResponse>("/innovation-service/anonymization", {
-      method: "POST",
-      data: formData,
-    });
-
-    return data;
+    return this.createJobFromBuffer(fileBuffer, name, options);
   }
 
   /**
-   * @description Create a new anonymization job and wait for it to complete.
-   * @param {string} file - The content of the file.
-   * @param {number} waitTime - The time to wait for the job to complete.
+   * @description Create a new anonymization job from a buffer.
+   * @param {ArrayBufferLike} buffer - The Buffer object.
+   * @param {string} filename - The name of the file.
    * @param {AnonymizationOptions} options - The blur options.
-   * @returns {Promise<GetJobStatusResponse>} The status of the anonymization job.
+   * @returns {Promise<CreateJobResponse>} The anonymization data.
    */
-  async createJobAndWait(file: string, waitTime: number, options?: AnonymizationOptions) {
-    const data = await this.createJob(file, options);
-    const jobId = data.anonymization_job_id;
-    const start = Date.now();
-    let currentTime = start;
-    let jobStatus;
+  async createJobFromBuffer(buffer: ArrayBufferLike, filename: string, options?: AnonymizationOptions) {
+    const type = await fileTypeFromBuffer(buffer);
+    const fileBlob = new Blob([buffer], { type: type?.mime });
+    return this.createJob({ data: fileBlob, filename, options });
+  }
 
-    do {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      jobStatus = await this.getJobStatus(jobId);
-      currentTime = Date.now();
-    } while (jobStatus.status !== "Succeeded" && currentTime - start < waitTime);
+  /**
+   * @description Create a new anonymization job from a File object.
+   * @param {File} file - The File object.
+   * @param {AnonymizationOptions} options - The blur options.
+   * @returns {Promise<CreateJobResponse>} The anonymization data.
+   */
+  async createJobFromFile(file: File, options?: AnonymizationOptions) {
+    return this.createJob({ data: file, options });
+  }
 
-    if (jobStatus.status !== "Succeeded") {
-      throw new Error("Job failed");
+  /**
+   * @description Create a new anonymization job from a Blob object.
+   * @param {Blob} blob - The Blob object.
+   * @param {string} filename - The name of the file.
+   * @param {AnonymizationOptions} options - The blur options.
+   * @returns {Promise<CreateJobResponse>} The anonymization data.
+   */
+  async createJobFromBlob(blob: Blob, filename: string, options?: AnonymizationOptions) {
+    return this.createJob({ data: blob, filename, options });
+  }
+
+  /**
+   * @description Create a new anonymization job from a File or Blob object.
+   * @param {File | Blob} data - The File or Blob object.
+   * @param {string} filename - The name of the file.
+   * @param {AnonymizationOptions} options - The blur options.
+   * @returns {Promise<CreateJobResponse>} The anonymization data.
+   */
+  private async createJob(args: { data: File | Blob; filename?: string; options?: AnonymizationOptions }) {
+    const data = new FormData();
+    data.append("input_media", args.data, args.data instanceof File ? args.data.name : args.filename);
+
+    if (args.options) {
+      this.appendFormData(data, args.options);
     }
 
-    return await this.getResultFile(jobStatus.output_media!.split("/").pop()!, "buffer");
+    return this.request<CreateJobResponse>("/innovation-service/anonymization", {
+      method: "POST",
+      data,
+    });
   }
 
   /**
