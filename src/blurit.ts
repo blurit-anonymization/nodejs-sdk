@@ -1,9 +1,7 @@
 declare const window: any;
 
-import fs from "fs/promises";
 import axios, { type AxiosRequestConfig } from "axios";
 import { fileTypeFromBuffer } from "file-type";
-import { createWriteStream, type ReadStream } from "fs";
 
 /**
  * @description Blurit is the main class for using the Blurit service.
@@ -72,11 +70,15 @@ export class Blurit {
    * @param {string} filePath - The content of the file.
    * @param {AnonymizationOptions} options - The blur options.
    * @returns {Promise<CreateJobResponse>} The anonymization data.
+   * @note Node.js only
    */
   async createJobFromPath(filePath: string, options?: AnonymizationOptions) {
+    if (!this.isNode) {
+      throw new Error("createJobFromPath is only available in Node.js");
+    }
+    const { default: fs } = await import("fs/promises");
     const fileBuffer = await fs.readFile(filePath);
     const name = filePath.split("/").pop()!;
-
     return this.createJobFromBuffer(fileBuffer, name, options);
   }
 
@@ -152,21 +154,22 @@ export class Blurit {
    * @param {string} filename - The name of the file.
    * @param {string} responseType - The type of response.
    * @returns {Promise<ReadStream|ArrayBuffer|Buffer|Blob>} The result file.
+   * @note ReadStream ("stream") et Buffer ("buffer") sont Node.js only
    */
   async getResultFile<T extends "stream" | "arraybuffer" | "buffer" | "blob" = "stream">(
     filename: string,
     responseType: T
   ) {
     type ResultType = T extends "stream"
-      ? ReadStream
+      ? any // ReadStream n'est pas typé dans le navigateur
       : T extends "arraybuffer"
         ? ArrayBuffer
         : T extends "buffer"
           ? Buffer
           : Blob;
 
-    if (!this.isNode && responseType === "buffer") {
-      throw new Error("Buffer is not supported in the browser");
+    if (!this.isNode && (responseType === "buffer" || responseType === "stream")) {
+      throw new Error(`${responseType} is not supported in the browser`);
     }
 
     // Make the call
@@ -180,8 +183,13 @@ export class Blurit {
    * @description Convenient function to save the result file of an anonymization job.
    * @param {string} filename - The name of the file.
    * @param {string} outputFilename - The name of the output file.
+   * @note Node.js only
    */
   async saveResultFile(filename: string, outputFilename: string) {
+    if (!this.isNode) {
+      throw new Error("saveResultFile is only available in Node.js");
+    }
+    const { createWriteStream } = await import("fs");
     const responseData = await this.getResultFile(filename, "stream");
     responseData.pipe(createWriteStream(outputFilename));
   }
