@@ -2,15 +2,13 @@ declare const window: any;
 
 import axios, { type AxiosRequestConfig } from "axios";
 import { fileTypeFromBuffer } from "file-type";
+import { createWriteStream } from "fs";
+import { readFile } from "fs/promises";
 
 /**
  * @description Blurit is the main class for using the Blurit service.
  * @param {AxiosRequestConfig} fetchInit - The fetch initialization options.
  * @returns {Blurit} A Blurit instance.
- * @example
- * const blurit = new Blurit();
- * const loginData = await blurit.login('clientId', 'secretId');
- * const anonymizeData = await blurit.anonymize('image.jpg', 'image.jpg', 'image/jpeg');
  */
 export class Blurit {
   private loginData: LoginResponse = {} as LoginResponse;
@@ -76,8 +74,7 @@ export class Blurit {
     if (!this.isNode) {
       throw new Error("createJobFromPath is only available in Node.js");
     }
-    const { default: fs } = await import("fs/promises");
-    const fileBuffer = await fs.readFile(filePath);
+    const fileBuffer = await readFile(filePath);
     const name = filePath.split("/").pop()!;
     return this.createJobFromBuffer(fileBuffer, name, options);
   }
@@ -189,7 +186,6 @@ export class Blurit {
     if (!this.isNode) {
       throw new Error("saveResultFile is only available in Node.js");
     }
-    const { createWriteStream } = await import("fs");
     const responseData = await this.getResultFile(filename, "stream");
     responseData.pipe(createWriteStream(outputFilename));
   }
