@@ -7,7 +7,7 @@ import {
   LoginResponse,
   GetWebhooksResponse,
   UpdateWebhookResponse,
-} from "../src/blurit";
+} from "../src/blurit.node";
 import { test, expect, describe, beforeAll, expectTypeOf } from "vitest";
 import "dotenv/config";
 import { writeFileSync } from "fs";

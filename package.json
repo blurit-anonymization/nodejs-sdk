@@ -1,13 +1,17 @@
 {
   "name": "blurit-sdk",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "main": "./dist/blurit.cjs",
   "module": "./dist/blurit.mjs",
   "types": "./dist/blurit.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/blurit.mjs",
-      "require": "./dist/blurit.cjs"
+      "import": "./dist/blurit.node.mjs",
+      "require": "./dist/blurit.node.cjs"
+    },
+    "./browser": {
+      "import": "./dist/blurit.browser.mjs",
+      "require": "./dist/blurit.browser.cjs"
     }
   },
   "files": [
