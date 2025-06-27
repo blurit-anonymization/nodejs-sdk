@@ -113,7 +113,6 @@ describe("Webhooks", () => {
 
     const webhookUrl2 = `${webhookUrl}-2`;
     const webhook = await blurit.updateWebhook(webhookId, webhookUrl2);
-    console.log("webhook", webhook);
     expectTypeOf(webhook).toEqualTypeOf<UpdateWebhookResponse>();
     expect(webhook.webhookUrl).toBe(webhookUrl2);
   });
