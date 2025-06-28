@@ -15,6 +15,25 @@ export class Blurit {
     this.isNode = typeof window === "undefined";
   }
 
+  /**
+   * Create a new Blurit instance with a login.
+   * @param clientId - The client ID.
+   * @param secretId - The secret ID.
+   * @param fetchInit - The fetch initialization options.
+   * @returns A new Blurit instance.
+   */
+  static async new(clientId: string, secretId: string, fetchInit?: AxiosRequestConfig) {
+    const instance = new Blurit(fetchInit);
+    await instance.login(clientId, secretId);
+    return instance;
+  }
+
+  /**
+   * Login to the Blurit API.
+   * @param clientId - The client ID.
+   * @param secretId - The secret ID.
+   * @returns The login response.
+   */
   async login(clientId: string, secretId: string) {
     const data = await this.request<LoginResponse>("/login", {
       method: "POST",
@@ -27,6 +46,10 @@ export class Blurit {
     return data;
   }
 
+  /**
+   * Refresh the login token.
+   * @returns The refresh response.
+   */
   async refresh() {
     const data = await this.request<RefreshResponse>("/token", {
       method: "POST",
@@ -38,20 +61,45 @@ export class Blurit {
     return data;
   }
 
+  /**
+   * Create a new job from a buffer.
+   * @param buffer - The buffer to create the job from.
+   * @param filename - The filename of the buffer.
+   * @param options - The anonymization options.
+   * @returns The create job response.
+   */
   async createJobFromBuffer(buffer: ArrayBufferLike, filename: string, options?: AnonymizationOptions) {
     const type = await fileTypeFromBuffer(buffer);
     const fileBlob = new Blob([buffer], { type: type?.mime });
     return this.createJob({ data: fileBlob, filename, options });
   }
 
+  /**
+   * Create a new job from a file.
+   * @param file - The file to create the job from.
+   * @param options - The anonymization options.
+   * @returns The create job response.
+   */
   async createJobFromFile(file: File, options?: AnonymizationOptions) {
     return this.createJob({ data: file, options });
   }
 
+  /**
+   * Create a new job from a blob.
+   * @param blob - The blob to create the job from.
+   * @param filename - The filename of the blob.
+   * @param options - The anonymization options.
+   * @returns The create job response.
+   */
   async createJobFromBlob(blob: Blob, filename: string, options?: AnonymizationOptions) {
     return this.createJob({ data: blob, filename, options });
   }
 
+  /**
+   * Create a new job from a file or blob.
+   * @param args - The arguments to create the job from.
+   * @returns The create job response.
+   */
   private async createJob(args: { data: File | Blob; filename?: string; options?: AnonymizationOptions }) {
     const data = new FormData();
     data.append("input_media", args.data, args.data instanceof File ? args.data.name : args.filename);
@@ -64,12 +112,23 @@ export class Blurit {
     });
   }
 
+  /**
+   * Get the status of a job.
+   * @param jobId - The ID of the job.
+   * @returns The job status response.
+   */
   async getJobStatus(jobId: string) {
     return await this.request<GetJobStatusResponse>(`/innovation-service/anonymization?anonymization_job_id=${jobId}`, {
       method: "GET",
     });
   }
 
+  /**
+   * Get the result file of a job.
+   * @param filename - The filename of the result file.
+   * @param responseType - The type of the response.
+   * @returns The result file.
+   */
   async getResultFile<T extends "stream" | "arraybuffer" | "buffer" | "blob" = "stream">(
     filename: string,
     responseType: T
@@ -90,12 +149,21 @@ export class Blurit {
     });
   }
 
+  /**
+   * Get the webhooks.
+   * @returns The webhooks.
+   */
   async getWebhooks() {
     return await this.request<GetWebhooksResponse>("/webhook-url/get-many", {
       method: "GET",
     });
   }
 
+  /**
+   * Create a new webhook.
+   * @param webhookUrl - The URL of the webhook.
+   * @returns The created webhook.
+   */
   async createWebhook(webhookUrl: string) {
     return await this.request<CreateWebhookResponse>("/webhook-url", {
       method: "POST",
@@ -103,6 +171,12 @@ export class Blurit {
     });
   }
 
+  /**
+   * Update a webhook.
+   * @param id - The ID of the webhook.
+   * @param webhookUrl - The URL of the webhook.
+   * @returns The updated webhook.
+   */
   async updateWebhook(id: string, webhookUrl: string) {
     return await this.request<UpdateWebhookResponse>(`/webhook-url/${id}`, {
       method: "PUT",
@@ -110,18 +184,34 @@ export class Blurit {
     });
   }
 
+  /**
+   * Delete a webhook.
+   * @param id - The ID of the webhook.
+   * @returns The deleted webhook.
+   */
   async deleteWebhook(id: string) {
     return await this.request(`/webhook-url/${id}`, {
       method: "DELETE",
     });
   }
 
+  /**
+   * Test a webhook.
+   * @param id - The ID of the webhook.
+   * @returns The test webhook response.
+   */
   async testWebhook(id: string) {
     return await this.request(`/webhook-url/test/${id}`, {
       method: "POST",
     });
   }
 
+  /**
+   * Append data to a form data object.
+   * @param formData - The form data object.
+   * @param data - The data to append.
+   * @param parentKey - The parent key.
+   */
   private appendFormData(formData: FormData, data: any, parentKey?: string) {
     if (data && typeof data === "object" && !(data instanceof File || data instanceof Blob)) {
       for (const key in data) {
@@ -135,6 +225,12 @@ export class Blurit {
     }
   }
 
+  /**
+   * Make a request to the Blurit API.
+   * @param path - The path of the request.
+   * @param options - The request options.
+   * @returns The response data.
+   */
   private async request<T>(path: string, options: RequestOpions) {
     const data = options.data instanceof FormData ? options.data : options.data;
     const headers: Record<string, string> = {
@@ -153,6 +249,10 @@ export class Blurit {
     return res.data as T;
   }
 
+  /**
+   * Save the login data.
+   * @param data - The login data.
+   */
   private saveLoginData(data: LoginResponse) {
     this.loginData = data;
   }
